@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "audit:catalog": "node scripts/audit-catalog.mjs"
+    "audit:catalog": "node scripts/audit-catalog.mjs",
+    "export:catalog-csv": "node scripts/export-catalog-csv.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
