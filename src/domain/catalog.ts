@@ -40,6 +40,10 @@ export function validateCatalog(value: unknown): { valid: boolean; errors: strin
     }
     if (ids.has(item.id)) errors.push(`ID duplicado: ${item.id}`);
     ids.add(item.id);
+    const expectedModality = item.id.startsWith("NAC-") ? "NAC" : item.id.startsWith("EXT-") ? "EXT" : null;
+    if (!expectedModality || item.modalidade !== expectedModality) {
+      errors.push(`Modalidade incompatível com o ID ${item.id}.`);
+    }
   });
   const expected = new Set([
     ...Array.from({ length: 24 }, (_, i) => `NAC-${String(i + 1).padStart(3, "0")}`),
