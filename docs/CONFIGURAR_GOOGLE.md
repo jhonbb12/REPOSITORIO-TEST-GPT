@@ -12,7 +12,7 @@ Esta etapa ainda não foi executada. Use uma planilha de teste da equipe; não u
 
 ## 2. Preencher a aba Projetos
 
-A aba `Projetos` deve conter os 46 registros do CSV oficial do kit. Importe `universo_if_catalogo_46_projetos_v1.0.csv` para a aba, substituindo seu conteúdo. Preserve a ordem das colunas do CSV: `id`, `titulo`, `modalidade`, `area_tematica`, `data`, `inicio`, `fim`, `formato`, `local`, `fontes_paginas`. O backend lê as três primeiras colunas para validar projetos e montar o ranking; as demais preservam metadados públicos. Não altere IDs ou títulos.
+A aba `Projetos` deve conter os 46 registros do CSV oficial do kit. Na raiz do projeto, execute `npm run export:catalog-csv`. O comando gera `exports/universo_if_catalogo_46_projetos_v1.0.csv` diretamente do catálogo gzip auditado. Importe esse CSV para a aba, substituindo seu conteúdo. Preserve a ordem das colunas: `id`, `titulo`, `modalidade`, `area_tematica`, `data`, `inicio`, `fim`, `formato`, `local`, `fontes_paginas`. A coluna `fontes_paginas` registra arquivo e página de origem. O backend lê as três primeiras colunas para validar projetos e montar o ranking; as demais preservam metadados públicos. Não altere IDs ou títulos.
 
 ## 3. Registrar códigos de teste
 
