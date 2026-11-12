@@ -1,0 +1,71 @@
+/**
+ * Universo IF Avalia — backend Google Apps Script (modelo inicial).
+ * Configure Script Properties: SPREADSHEET_ID.
+ * Não publicar como API antes dos testes de CORS, acesso institucional e concorrência.
+ */
+const SHEETS = {
+  projetos: ["Projetos", ["id_projeto", "titulo", "modalidade"]],
+  codigos: ["Codigos", ["hash_codigo", "ativo", "criado_em"]],
+  avaliacoes: ["Avaliacoes", ["id_requisicao", "hash_codigo", "id_projeto", "c1", "c2", "c3", "c4", "nota_ponderada", "criado_em"]],
+  config: ["Configuracao", ["chave", "valor"]]
+};
+const WEIGHTS = [0.30, 0.30, 0.25, 0.15];
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e?.postData?.contents || "{}");
+    if (body.action !== "submitVote") return json_({ ok: false, error: "AÇÃO_INVÁLIDA" });
+    return json_(submitVote_(body));
+  } catch (err) {
+    return json_({ ok: false, error: "ERRO_INTERNO" });
+  }
+}
+
+function submitVote_(body) {
+  const token = String(body.code || "").trim();
+  const projectId = String(body.projectId || "").trim();
+  const requestId = String(body.requestId || "").trim();
+  const ratings = body.ratings || {};
+  if (!token || !projectId || !requestId) return { ok: false, error: "DADOS_OBRIGATÓRIOS" };
+  const values = [ratings.relevancia, ratings.inovacao, ratings.execucao, ratings.apresentacao];
+  if (!values.every(n => Number.isInteger(n) && n >= 1 && n <= 5)) return { ok: false, error: "NOTAS_INVÁLIDAS" };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID"));
+    const codeHash = sha256_(token);
+    const requestHash = sha256_(requestId);
+    const codeSheet = ensureSheet_(ss, SHEETS.codigos);
+    const voteSheet = ensureSheet_(ss, SHEETS.avaliacoes);
+    const codeRows = codeSheet.getDataRange().getValues();
+    const codeIndex = codeRows.findIndex((r, i) => i > 0 && r[0] === codeHash && r[1] === true);
+    if (codeIndex < 0) return { ok: false, error: "CÓDIGO_INVÁLIDO" };
+    const votes = voteSheet.getDataRange().getValues();
+    const priorRequest = votes.find((r, i) => i > 0 && r[0] === requestHash);
+    if (priorRequest) return { ok: true, receipt: requestHash.slice(0, 16), repeated: true };
+    const duplicate = votes.some((r, i) => i > 0 && r[1] === codeHash && r[2] === projectId);
+    if (duplicate) return { ok: false, error: "VOTO_DUPLICADO" };
+    const score = values.reduce((sum, n, i) => sum + n * WEIGHTS[i], 0);
+    voteSheet.appendRow([requestHash, codeHash, projectId, ...values, score, new Date()]);
+    SpreadsheetApp.flush();
+    return { ok: true, receipt: requestHash.slice(0, 16), repeated: false };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function ensureSheet_(ss, definition) {
+  let sheet = ss.getSheetByName(definition[0]);
+  if (!sheet) sheet = ss.insertSheet(definition[0]);
+  if (sheet.getLastRow() === 0) sheet.appendRow(definition[1]);
+  return sheet;
+}
+
+function sha256_(value) {
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, value, Utilities.Charset.UTF_8);
+  return bytes.map(b => ("0" + ((b + 256) % 256).toString(16)).slice(-2)).join("");
+}
+
+function json_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
+}
