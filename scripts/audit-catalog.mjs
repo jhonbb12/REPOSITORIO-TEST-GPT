@@ -12,7 +12,7 @@ const allowedFiles = new Set([
   "trabalhos-mostra-nacional-extensao.pdf"
 ]);
 const timeToMinutes = value => {
-  assert.match(value,/^(?:[01]\\d|2[0-3]):[0-5]\\d$/,"horário deve estar em HH:MM válido");
+  assert.match(value,/^(?:[01]\d|2[0-3]):[0-5]\d$/,"horário deve estar em HH:MM válido");
   const [h,m]=value.split(":").map(Number);
   return h*60+m;
 };
@@ -24,7 +24,7 @@ assert.equal(national.length,24);
 assert.equal(extension.length,22);
 assert.deepEqual(catalog.total_por_modalidade,{"Mostra Nacional":24,"Mostra de Extensão":22});
 assert.equal(new Set(projects.map(p=>p.id)).size,46);
-assert.equal(new Set(projects.map(p=>p.modalidade+":"+p.titulo.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleUpperCase("pt-BR"))).size,46);
+assert.equal(new Set(projects.map(p=>p.modalidade+":"+p.titulo.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleUpperCase("pt-BR"))).size,46);
 
 const countsByDay = {"2026-11-17":0,"2026-11-18":0};
 for (const p of projects) {
@@ -32,7 +32,7 @@ for (const p of projects) {
     assert.equal(typeof p[key],"string",p.id+": campo textual inválido: "+key);
     assert.ok(p[key].trim().length>0,p.id+": campo vazio: "+key);
   }
-  assert.match(p.id,/^(NAC-\\d{3}|EXT-\\d{3})$/);
+  assert.match(p.id,/^(NAC-\d{3}|EXT-\d{3})$/);
   assert.ok(["2026-11-17","2026-11-18"].includes(p.data),p.id+": data fora da programação");
   countsByDay[p.data]++;
   assert.ok(timeToMinutes(p.inicio)<timeToMinutes(p.fim),p.id+": horário final deve ser posterior ao inicial");
