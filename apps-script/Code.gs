@@ -4,7 +4,7 @@
  * O acesso público não deve ser liberado antes de revisão e testes com planilha de homologação.
  */
 const SHEETS = {
-  projetos: ["Projetos", ["id_projeto","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes_paginas"]],
+  projetos: ["Projetos", ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes_paginas"]],
   codigos: ["Codigos", ["hash_codigo","ativo","criado_em"]],
   avaliacoes: ["Avaliacoes", ["id_requisicao_hash","hash_codigo","id_projeto","c1_inovacao","c2_clareza","c3_relevancia","c4_demonstracao","nota_ponderada","recibo","criado_em","estado"]],
   config: ["Configuracao", ["chave","valor"]]
@@ -67,7 +67,7 @@ function submitVote_(body) {
   const projectId=String(body.projectId||"").trim();
   const requestId=String(body.requestId||"").trim();
   const ratings=body.ratings||{};
-  if (!token || !projectId || !requestId) return {ok:false,error:"DADOS_OBRIGATÓRIOS"};
+  if (!token || token.length>256 || !/^(NAC|EXT)-\\d{3}$/.test(projectId) || requestId.length<16 || requestId.length>128) return {ok:false,error:"DADOS_OBRIGATÓRIOS"};
   const values=[ratings.inovacao,ratings.clareza,ratings.relevancia,ratings.demonstracao];
   if (!values.every(n=>Number.isInteger(n) && n>=1 && n<=5)) return {ok:false,error:"NOTAS_INVÁLIDAS"};
 
