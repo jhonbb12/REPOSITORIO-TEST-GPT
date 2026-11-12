@@ -6,7 +6,7 @@
 const SHEETS = {
   projetos: ["Projetos", ["id_projeto", "titulo", "modalidade"]],
   codigos: ["Codigos", ["hash_codigo", "ativo", "criado_em"]],
-  avaliacoes: ["Avaliacoes", ["id_requisicao", "hash_codigo", "id_projeto", "c1", "c2", "c3", "c4", "nota_ponderada", "criado_em"]],
+  avaliacoes: ["Avaliacoes", ["id_requisicao", "hash_codigo", "id_projeto", "c1", "c2", "c3", "c4", "nota_ponderada", "recibo", "criado_em"]],
   config: ["Configuracao", ["chave", "valor"]]
 };
 const WEIGHTS = [0.30, 0.30, 0.25, 0.15];
@@ -32,23 +32,35 @@ function submitVote_(body) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    const ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID"));
+    const spreadsheetId = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+    if (!spreadsheetId) throw new Error("SPREADSHEET_ID não configurado");
+    const ss = SpreadsheetApp.openById(spreadsheetId);
     const codeHash = sha256_(token);
     const requestHash = sha256_(requestId);
+    const projectSheet = ensureSheet_(ss, SHEETS.projetos);
     const codeSheet = ensureSheet_(ss, SHEETS.codigos);
     const voteSheet = ensureSheet_(ss, SHEETS.avaliacoes);
+    const projectExists = projectSheet.getDataRange().getValues().some((r, i) => i > 0 && r[0] === projectId);
+    if (!projectExists) return { ok: false, error: "PROJETO_INVÁLIDO" };
     const codeRows = codeSheet.getDataRange().getValues();
     const codeIndex = codeRows.findIndex((r, i) => i > 0 && r[0] === codeHash && r[1] === true);
     if (codeIndex < 0) return { ok: false, error: "CÓDIGO_INVÁLIDO" };
     const votes = voteSheet.getDataRange().getValues();
     const priorRequest = votes.find((r, i) => i > 0 && r[0] === requestHash);
-    if (priorRequest) return { ok: true, receipt: requestHash.slice(0, 16), repeated: true };
+    if (priorRequest) {
+      const samePayload = priorRequest[1] === codeHash && priorRequest[2] === projectId &&
+        values.every((n, i) => priorRequest[i + 3] === n);
+      return samePayload
+        ? { ok: true, receipt: priorRequest[8], repeated: true }
+        : { ok: false, error: "ID_REQUISICAO_REUTILIZADO" };
+    }
     const duplicate = votes.some((r, i) => i > 0 && r[1] === codeHash && r[2] === projectId);
     if (duplicate) return { ok: false, error: "VOTO_DUPLICADO" };
     const score = values.reduce((sum, n, i) => sum + n * WEIGHTS[i], 0);
-    voteSheet.appendRow([requestHash, codeHash, projectId, ...values, score, new Date()]);
+    const receipt = Utilities.getUuid();
+    voteSheet.appendRow([requestHash, codeHash, projectId, ...values, score, receipt, new Date()]);
     SpreadsheetApp.flush();
-    return { ok: true, receipt: requestHash.slice(0, 16), repeated: false };
+    return { ok: true, receipt, repeated: false };
   } finally {
     lock.releaseLock();
   }
