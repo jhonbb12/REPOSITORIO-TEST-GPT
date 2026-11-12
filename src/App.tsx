@@ -5,7 +5,7 @@ import { CRITERIA, RATING_LABELS, weightedScore, type Ratings } from "./domain/s
 type Tab = "projects" | "evaluate" | "ranking";
 type RankingRow = {
   id: string; titulo: string; modalidade: string; total_avaliacoes: number;
-  media_ponderada: number | null; medias_criterios: number[]; colocacao: number | null;
+  media_ponderada: number | null; medias_criterios: (number | null)[]; colocacao: number | null;
   status: string; atualizado_em: string | null;
 };
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
@@ -148,7 +148,7 @@ export default function App() {
         <label className="ranking-filter">Modalidade<select value={rankingModality} onChange={e=>setRankingModality(e.target.value as "NAC"|"EXT")}><option value="NAC">Mostra Nacional</option><option value="EXT">Mostra de Extensão</option></select></label>
         {rankingState==="loading" && <div className="empty-state" role="status"><h3>Consultando resultados…</h3></div>}
         {rankingState==="error" && <div className="empty-state"><h3>Ranking ainda não disponível</h3><p>O endpoint agregado do Apps Script ainda não foi conectado e homologado.</p></div>}
-        {rankingState==="ready" && filteredRanking.map(row=><article className="project-card" key={row.id}><div><span className="project-id">{row.colocacao?"#"+row.colocacao:"Aguardando amostra mínima"} · {row.id}</span><h3>{row.titulo}</h3><p>{row.total_avaliacoes} avaliações · {row.media_ponderada===null?"—":row.media_ponderada.toFixed(2).replace(".",",")+"/5"}</p></div></article>)}
+        {rankingState==="ready" && filteredRanking.map(row=><article className="project-card" key={row.id}><div><span className="project-id">{row.colocacao?"#"+row.colocacao:"Aguardando amostra mínima"} · {row.id}</span><h3>{row.titulo}</h3><p>{row.total_avaliacoes} avaliações · {row.media_ponderada===null?"—":row.media_ponderada.toFixed(2).replace(".",",")+"/5"}</p><p>Médias: {row.medias_criterios.map((n,i)=>CRITERIA[i].label+": "+(n===null?"—":n.toFixed(2).replace(".",","))).join(" · ")}</p><p>Atualizado: {row.atualizado_em?new Date(row.atualizado_em).toLocaleString("pt-BR"):"—"}</p></div><button onClick={()=>{setSelectedId(row.id);setTab("projects");}}>Ver projeto</button></article>)}
       </section>}
       <footer><p>O Universo IF Avalia é um protótipo de participação popular educativa. Não representa avaliação oficial, científica ou institucional dos projetos. A programação pode sofrer alterações pela organização do evento.</p></footer>
     </main>
