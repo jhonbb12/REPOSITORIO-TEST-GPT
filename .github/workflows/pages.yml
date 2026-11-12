@@ -31,7 +31,9 @@ jobs:
           node -e "const a=require('/tmp/npm-audit.json'); for (const [name,v] of Object.entries(a.vulnerabilities || {})) console.log(name + ' | ' + v.severity + ' | fix=' + JSON.stringify(v.fixAvailable))"
       - run: npm audit --audit-level=high
       - run: npm test
-      - run: npm run audit:catalog\n      - run: npm run export:catalog-csv\n      - run: test "$(wc -l < exports/universo_if_catalogo_46_projetos_v1.0.csv)" -eq 47
+      - run: npm run audit:catalog
+      - run: npm run export:catalog-csv
+      - run: test "$(wc -l < exports/universo_if_catalogo_46_projetos_v1.0.csv)" -eq 47
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
