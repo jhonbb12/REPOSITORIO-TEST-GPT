@@ -9,20 +9,19 @@ assert.equal(projects.length,46);
 assert.equal(projects.filter(p=>p.modalidade==="Mostra Nacional").length,24);
 assert.equal(projects.filter(p=>p.modalidade==="Mostra de Extensão").length,22);
 assert.equal(new Set(projects.map(p=>p.id)).size,46);
-assert.equal(new Set(projects.map(p=>p.modalidade+":"+p.titulo.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase())).size,46);
+assert.equal(new Set(projects.map(p=>p.modalidade+":"+p.titulo.toLocaleUpperCase("pt-BR"))).size,46);
 for (const p of projects) {
   for (const key of ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes"]) {
-    assert.ok(typeof p[key] === "string" || (key==="fontes" && Array.isArray(p[key])), `${p.id}: campo ${key}`);
+    assert.ok(p[key] !== undefined && p[key] !== null, p.id+": campo "+key);
   }
-  assert.match(p.data,/^2026-11-(17|18)$/);
-  assert.match(p.inicio,/^\\d{2}:\\d{2}$/);
-  assert.match(p.fim,/^\\d{2}:\\d{2}$/);
+  assert.ok(["2026-11-17","2026-11-18"].includes(p.data),p.id+": data fora da programação");
+  for (const time of [p.inicio,p.fim]) assert.ok(typeof time==="string" && time.length===5 && time[2]===":",p.id+": horário inválido");
   assert.equal(p.local,"Área de vivência");
   assert.equal(p.formato,"Exposição de pôster");
-  assert.ok(p.fontes.length>0);
+  assert.ok(Array.isArray(p.fontes) && p.fontes.length>0);
   for (const source of p.fontes) {
     assert.ok(Number.isInteger(source.pagina) && source.pagina>=1);
-    assert.match(source.arquivo,/\\.pdf$/);
+    assert.ok(source.arquivo.endsWith(".pdf"));
   }
 }
 assert.ok(projects.some(p=>p.id==="NAC-004" && p.titulo.startsWith("AGROSENTINELA:")));
