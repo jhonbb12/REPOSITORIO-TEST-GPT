@@ -67,7 +67,7 @@ function submitVote_(body) {
   const projectId=String(body.projectId||"").trim();
   const requestId=String(body.requestId||"").trim();
   const ratings=body.ratings||{};
-  if (!token || token.length>256 || !/^(NAC|EXT)-\\d{3}$/.test(projectId) || requestId.length<16 || requestId.length>128) return {ok:false,error:"DADOS_OBRIGATÓRIOS"};
+  if (!token || token.length>256 || !/^(NAC|EXT)-\d{3}$/.test(projectId) || requestId.length<16 || requestId.length>128) return {ok:false,error:"DADOS_OBRIGATÓRIOS"};
   const values=[ratings.inovacao,ratings.clareza,ratings.relevancia,ratings.demonstracao];
   if (!values.every(n=>Number.isInteger(n) && n>=1 && n<=5)) return {ok:false,error:"NOTAS_INVÁLIDAS"};
 
