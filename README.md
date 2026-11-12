@@ -17,7 +17,7 @@ MVP em desenvolvimento para participação popular educativa nos projetos do IFM
 Node.js 20+ e npm.
 
 ```bash
-npm ci
+npm install
 npm test
 npm run build
 npm run audit:catalog
