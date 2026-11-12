@@ -14,5 +14,5 @@ const lines=[columns.join(","),...catalog.projetos.map(p=>[
   p.fontes.map(s=>s.arquivo+"#"+s.pagina).join(";")
 ].map(quote).join(","))];
 fs.mkdirSync(path.dirname(output),{recursive:true});
-fs.writeFileSync(output,"\\uFEFF"+lines.join("\\r\\n")+"\\r\\n","utf8");
+fs.writeFileSync(output,"\uFEFF"+lines.join("\r\n")+"\r\n","utf8");
 console.log("CSV gerado: "+path.relative(root,output)+" ("+catalog.projetos.length+" projetos).");
