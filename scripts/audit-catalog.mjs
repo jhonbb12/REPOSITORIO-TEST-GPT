@@ -1,26 +1,31 @@
 import fs from "node:fs";
-const path = new URL("../src/data/projects.json", import.meta.url);
-const data = JSON.parse(fs.readFileSync(path, "utf8"));
-const expected = [
-  ...Array.from({length:24},(_,i)=>`NAC-${String(i+1).padStart(3,"0")}`),
-  ...Array.from({length:22},(_,i)=>`EXT-${String(i+1).padStart(3,"0")}`)
-];
-const ids = new Set();
-const errors = [];
-if (!Array.isArray(data)) errors.push("Raiz do JSON não é um array.");
-else {
-  if (data.length !== 46) errors.push(`Quantidade incorreta: ${data.length}/46.`);
-  for (const [i,p] of data.entries()) {
-    for (const key of ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes"]) {
-      if (!(key in (p ?? {}))) errors.push(`Índice ${i}: campo ausente ${key}.`);
-    }
-    if (p?.id && ids.has(p.id)) errors.push(`ID duplicado: ${p.id}`);
-    if (p?.id) ids.add(p.id);
+import { gunzipSync } from "node:zlib";
+import assert from "node:assert/strict";
+const file = new URL("../public/data/projects.json.gz", import.meta.url);
+const catalog = JSON.parse(gunzipSync(fs.readFileSync(file)).toString("utf8"));
+const projects = catalog.projetos;
+assert.equal(catalog.schema,"universo-if-catalogo-v1.0");
+assert.equal(projects.length,46);
+assert.equal(projects.filter(p=>p.modalidade==="Mostra Nacional").length,24);
+assert.equal(projects.filter(p=>p.modalidade==="Mostra de Extensão").length,22);
+assert.equal(new Set(projects.map(p=>p.id)).size,46);
+assert.equal(new Set(projects.map(p=>p.modalidade+":"+p.titulo.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase())).size,46);
+for (const p of projects) {
+  for (const key of ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes"]) {
+    assert.ok(typeof p[key] === "string" || (key==="fontes" && Array.isArray(p[key])), `${p.id}: campo ${key}`);
   }
-  for (const id of expected) if (!ids.has(id)) errors.push(`ID obrigatório ausente: ${id}`);
+  assert.match(p.data,/^2026-11-(17|18)$/);
+  assert.match(p.inicio,/^\\d{2}:\\d{2}$/);
+  assert.match(p.fim,/^\\d{2}:\\d{2}$/);
+  assert.equal(p.local,"Área de vivência");
+  assert.equal(p.formato,"Exposição de pôster");
+  assert.ok(p.fontes.length>0);
+  for (const source of p.fontes) {
+    assert.ok(Number.isInteger(source.pagina) && source.pagina>=1);
+    assert.match(source.arquivo,/\\.pdf$/);
+  }
 }
-if (errors.length) {
-  console.error("CATÁLOGO NÃO HOMOLOGADO");
-  errors.forEach(e=>console.error(" - "+e));
-  process.exitCode = 1;
-} else console.log("PASS: 46 IDs e estrutura mínima presentes. Conferência documental dos PDFs ainda é um gate separado.");
+assert.ok(projects.some(p=>p.id==="NAC-004" && p.titulo.startsWith("AGROSENTINELA:")));
+assert.ok(projects.some(p=>p.id==="NAC-005" && p.titulo.startsWith("TRAÇO VIVO:")));
+console.log("PASS — 46 projetos únicos (24 Mostra Nacional, 22 Mostra de Extensão).");
+console.log("PASS — schema, datas, modalidade, local, formato e proveniência.");
