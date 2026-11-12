@@ -11,6 +11,62 @@ const SHEETS = {
 };
 const WEIGHTS = [0.30, 0.30, 0.25, 0.15];
 
+function setupSheets() {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+  if (!spreadsheetId) throw new Error("Configure SPREADSHEET_ID nas propriedades do script.");
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  Object.values(SHEETS).forEach(definition => ensureSheet_(ss, definition));
+  return "Abas verificadas.";
+}
+
+function doGet(e) {
+  const action = String(e?.parameter?.action || "");
+  if (action !== "ranking") return json_({ ok: false, error: "AÇÃO_INVÁLIDA" });
+  try {
+    return json_({ ok: true, ranking: getPublicRanking_() });
+  } catch (err) {
+    return json_({ ok: false, error: "ERRO_INTERNO" });
+  }
+}
+
+function getPublicRanking_() {
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+  if (!spreadsheetId) throw new Error("SPREADSHEET_ID não configurado");
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  const projects = ensureSheet_(ss, SHEETS.projetos).getDataRange().getValues().slice(1);
+  const votes = ensureSheet_(ss, SHEETS.avaliacoes).getDataRange().getValues().slice(1);
+  const totals = new Map();
+  votes.forEach(row => {
+    const id = String(row[2] || "");
+    if (!id) return;
+    const current = totals.get(id) || { count: 0, sum: 0 };
+    current.count += 1;
+    current.sum += Number(row[7]) || 0;
+    totals.set(id, current);
+  });
+  const rows = projects.filter(row => row[0]).map(row => {
+    const total = totals.get(String(row[0])) || { count: 0, sum: 0 };
+    return {
+      id: String(row[0]),
+      titulo: String(row[1] || ""),
+      modalidade: String(row[2] || ""),
+      total_avaliacoes: total.count,
+      media_ponderada: total.count ? Math.round((total.sum / total.count) * 100) / 100 : null
+    };
+  });
+  const result = [];
+  ["NAC", "EXT"].forEach(modality => {
+    const group = rows.filter(row => row.modalidade === modality);
+    const eligible = group.filter(row => row.total_avaliacoes >= 5)
+      .sort((a, b) => b.media_ponderada - a.media_ponderada || a.id.localeCompare(b.id));
+    const pending = group.filter(row => row.total_avaliacoes < 5)
+      .sort((a, b) => b.total_avaliacoes - a.total_avaliacoes || a.id.localeCompare(b.id));
+    eligible.forEach((row, index) => result.push({ ...row, colocacao: index + 1, status: "CLASSIFICADO" }));
+    pending.forEach(row => result.push({ ...row, colocacao: null, status: "AGUARDANDO_AMOSTRA_MINIMA" }));
+  });
+  return result;
+}
+
 function doPost(e) {
   try {
     const body = JSON.parse(e?.postData?.contents || "{}");
