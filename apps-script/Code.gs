@@ -4,7 +4,7 @@
  * O acesso público não deve ser liberado antes de revisão e testes com planilha de homologação.
  */
 const SHEETS = {
-  projetos: ["Projetos", ["id_projeto","titulo","modalidade","area_tematica","data","inicio","fim","formato","local"]],
+  projetos: ["Projetos", ["id_projeto","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes_paginas"]],
   codigos: ["Codigos", ["hash_codigo","ativo","criado_em"]],
   avaliacoes: ["Avaliacoes", ["id_requisicao_hash","hash_codigo","id_projeto","c1_inovacao","c2_clareza","c3_relevancia","c4_demonstracao","nota_ponderada","recibo","criado_em","estado"]],
   config: ["Configuracao", ["chave","valor"]]
