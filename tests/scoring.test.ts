@@ -21,6 +21,19 @@ describe("catálogo oficial", () => {
     expect(normalizeSearch("AÇAÍ")).toBe("acai");
     expect(catalog.projetos.find(p=>p.id==="NAC-003")?.titulo).toContain("AÇAÍ");
   });
+  it("rejeita horário impossível e referência de página fora da fonte", () => {
+    const invalidTime=structuredClone(catalog);
+    invalidTime.projetos[0].inicio="29:75";
+    expect(validateCatalog(invalidTime).valid).toBe(false);
+    const invalidSource=structuredClone(catalog);
+    invalidSource.projetos[0].fontes[0].pagina=99;
+    expect(validateCatalog(invalidSource).valid).toBe(false);
+  });
+  it("rejeita distribuição por dia divergente", () => {
+    const changed=structuredClone(catalog);
+    changed.projetos[0].data="2026-11-18";
+    expect(validateCatalog(changed).valid).toBe(false);
+  });
   it("filtra modalidade e busca", () => {
     expect(filterProjects(catalog.projetos,"agrosentinela","NAC","","")).toHaveLength(1);
     expect(filterProjects(catalog.projetos,"","EXT","","")).toHaveLength(22);
