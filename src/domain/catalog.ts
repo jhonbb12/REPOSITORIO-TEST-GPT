@@ -69,7 +69,7 @@ export function validateCatalog(value: unknown): { valid: boolean; errors: strin
     if (titles.has(titleKey)) errors.push(`Título duplicado na modalidade: ${p.titulo}`);
     titles.add(titleKey);
     if (!["Mostra Nacional","Mostra de Extensão"].includes(p.modalidade)) errors.push(`${p.id}: modalidade inválida.`);
-    if (!Object.hasOwn(countsByDay,p.data)) errors.push(`${p.id}: data fora da programação.`);
+    if (!(p.data in countsByDay)) errors.push(`${p.id}: data fora da programação.`);
     else countsByDay[p.data]++;
     if (!validTime(p.inicio) || !validTime(p.fim) || minutes(p.inicio)>=minutes(p.fim)) errors.push(`${p.id}: horário inválido.`);
     if (p.formato !== "Exposição de pôster" || p.local !== "Área de vivência") errors.push(`${p.id}: local/formato divergente da fonte.`);
