@@ -3,6 +3,12 @@ on:
   push:
     branches: [main, feat/universo-if-avalia-mvp]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publicar no GitHub Pages (exige autorização explícita)"
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
   pages: write
@@ -25,7 +31,7 @@ jobs:
         with:
           path: dist
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
