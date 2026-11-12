@@ -26,7 +26,7 @@ npm run dev
 
 ## Configuração do catálogo
 
-O arquivo gzip é o JSON consolidado do kit, sem títulos inventados. A aplicação descompacta e valida o schema ao carregar. Para inspecionar localmente:
+O arquivo gzip é o JSON consolidado do kit, sem títulos inventados. `npm run export:catalog-csv` gera uma planilha CSV reproduzível para importar os mesmos 46 registros no Google Sheets. A aplicação descompacta e valida o schema ao carregar. Para inspecionar localmente:
 
 ```bash
 node -e "const fs=require('fs'),z=require('zlib'); console.log(z.gunzipSync(fs.readFileSync('public/data/projects.json.gz')).toString())"
