@@ -25,7 +25,7 @@ export interface CatalogFile {
 const required = ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes"] as const;
 const allowedFiles = new Set(["trabalhos-mostra-nacional.pdf","trabalhos-mostra-nacional-extensao.pdf"]);
 function validTime(value: unknown): value is string {
-  if (typeof value !== "string" || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value)) return false;
+  if (typeof value !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) return false;
   return true;
 }
 function minutes(value: string): number {
@@ -57,7 +57,7 @@ export function validateCatalog(value: unknown): { valid: boolean; errors: strin
     for (const key of ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local"] as const) {
       if (typeof p[key] !== "string" || !p[key].trim()) errors.push(`${p.id ?? index}: campo textual inválido ${key}.`);
     }
-    if (typeof p.id !== "string" || !/^(NAC|EXT)-\\d{3}$/.test(p.id)) errors.push(`ID inválido no registro ${index}.`);
+    if (typeof p.id !== "string" || !/^(NAC|EXT)-\d{3}$/.test(p.id)) errors.push(`ID inválido no registro ${index}.`);
     else {
       if (ids.has(p.id)) errors.push(`ID duplicado: ${p.id}`);
       ids.add(p.id);
@@ -65,7 +65,7 @@ export function validateCatalog(value: unknown): { valid: boolean; errors: strin
       if (p.modalidade !== expected) errors.push(`Modalidade incompatível com ${p.id}.`);
     }
     if (typeof p.titulo !== "string" || !p.titulo.trim()) errors.push(`${p.id}: título vazio.`);
-    const titleKey = `${p.modalidade}:${String(p.titulo).normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleUpperCase("pt-BR")}`;
+    const titleKey = `${p.modalidade}:${String(p.titulo).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleUpperCase("pt-BR")}`;
     if (titles.has(titleKey)) errors.push(`Título duplicado na modalidade: ${p.titulo}`);
     titles.add(titleKey);
     if (!["Mostra Nacional","Mostra de Extensão"].includes(p.modalidade)) errors.push(`${p.id}: modalidade inválida.`);
@@ -84,7 +84,7 @@ export function validateCatalog(value: unknown): { valid: boolean; errors: strin
   return { valid: errors.length === 0, errors };
 }
 export function normalizeSearch(value: string): string {
-  return value.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();
 }
 export function filterProjects(projects: Project[], query: string, modality: string, area: string, day: string): Project[] {
   const q = normalizeSearch(query);
