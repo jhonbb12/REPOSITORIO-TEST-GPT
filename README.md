@@ -9,7 +9,7 @@ Protótipo acadêmico de participação popular educativa para os projetos do IF
 - Interface: catálogo, busca sem acentos, filtros por modalidade/área/dia, detalhes e formulário com prévia ponderada.
 - Critérios: criatividade e inovação 30%; clareza da apresentação 30%; relevância e impacto 25%; demonstração e resultados 15%.
 - Backend Apps Script: regra de voto por código + projeto, LockService, idempotência, recibo e endpoint agregado de ranking.
-- Build e testes de CI: executados no GitHub Actions. Integração real, planilha e deploy público ainda não homologados.
+- CI: testes, auditoria do catálogo, exportação CSV, build e auditoria de dependências (zero vulnerabilidades no último run concluído). Integração real, planilha e deploy público ainda não homologados.
 - Branch de trabalho: `feat/universo-if-avalia-mvp`. `main` não foi alterada.
 
 ## Requisitos e comandos
