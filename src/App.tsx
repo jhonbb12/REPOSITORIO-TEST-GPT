@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import projectsJson from "./data/projects.json";
 import { filterProjects, validateCatalog, type Project } from "./domain/catalog";
 import { CRITERIA, RATING_LABELS, weightedScore, type Ratings } from "./domain/scoring";
@@ -24,7 +24,7 @@ export default function App() {
   const visible = useMemo(() => filterProjects(catalog, query, modality, area, day), [query, modality, area, day]);
   const score = weightedScore(ratings);
 
-  async function submitVote(event: React.FormEvent) {
+  async function submitVote(event: FormEvent) {
     event.preventDefault();
     setNotice("");
     if (!selected) return setNotice("Selecione um projeto antes de avaliar.");
