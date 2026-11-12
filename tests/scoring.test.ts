@@ -1,24 +1,40 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { CRITERIA, weightedScore, isValidRatings } from "../src/domain/scoring";
-import { filterProjects, normalizeSearch, validateCatalog, type Project } from "../src/domain/catalog";
+import { filterProjects, normalizeSearch, validateCatalog, type CatalogFile } from "../src/domain/catalog";
 
-describe("weighted scoring", () => {
-  it("applies weights 30/30/25/15 and returns a 1–5 score", () => {
-    expect(weightedScore({ relevancia: 5, inovacao: 4, execucao: 3, apresentacao: 2 })).toBeCloseTo(3.75);
-    expect(CRITERIA.reduce((s,c)=>s+c.weight,0)).toBeCloseTo(1);
+const catalog = JSON.parse(gunzipSync(readFileSync("public/data/projects.json.gz")).toString("utf8")) as CatalogFile;
+
+describe("catálogo oficial", () => {
+  it("valida 46 projetos, 24 nacionais e 22 de extensão", () => {
+    expect(validateCatalog(catalog).valid).toBe(true);
+    expect(catalog.projetos).toHaveLength(46);
+    expect(catalog.projetos.filter(p=>p.modalidade==="Mostra Nacional")).toHaveLength(24);
+    expect(catalog.projetos.filter(p=>p.modalidade==="Mostra de Extensão")).toHaveLength(22);
   });
-  it("rejects incomplete or out-of-range ratings", () => {
-    expect(isValidRatings({ relevancia: 5, inovacao: 4, execucao: 3, apresentacao: 6 })).toBe(false);
+  it("preserva IDs estáveis e registros AGROSENTINELA e TRAÇO VIVO separados", () => {
+    expect(catalog.projetos.some(p=>p.id==="NAC-004" && p.titulo.startsWith("AGROSENTINELA:"))).toBe(true);
+    expect(catalog.projetos.some(p=>p.id==="NAC-005" && p.titulo.startsWith("TRAÇO VIVO:"))).toBe(true);
+  });
+  it("normaliza acentos sem alterar os títulos originais", () => {
+    expect(normalizeSearch("AÇAÍ")).toBe("acai");
+    expect(catalog.projetos.find(p=>p.id==="NAC-003")?.titulo).toContain("AÇAÍ");
+  });
+  it("filtra modalidade e busca", () => {
+    expect(filterProjects(catalog.projetos,"agrosentinela","NAC","","")).toHaveLength(1);
+    expect(filterProjects(catalog.projetos,"","EXT","","")).toHaveLength(22);
   });
 });
 
-describe("catalog validation and search", () => {
-  const sample: Project = { id:"NAC-001", titulo:"Ação Ágil", modalidade:"NAC", area_tematica:"Educação", data:"2026-11-12", inicio:"09:00", fim:"10:00", formato:"Presencial", local:"Campus", fontes:[] };
-  it("normalizes accents and case", () => expect(normalizeSearch("AÇÃO ÁGIL")).toBe("acao agil"));
-  it("filters by accent-insensitive project title", () => expect(filterProjects([sample],"acao","NAC","","")).toHaveLength(1));
-  it("reports incomplete official catalog instead of silently accepting it", () => {
-    const result = validateCatalog([]);
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain("Esperados 46 projetos; recebidos 0.");
+describe("avaliação ponderada", () => {
+  it("usa pesos 30/30/25/15 e calcula [4,5,4,3] = 4,15", () => {
+    expect(CRITERIA.reduce((s,c)=>s+c.weight,0)).toBeCloseTo(1);
+    expect(weightedScore({inovacao:4,clareza:5,relevancia:4,demonstracao:3})).toBeCloseTo(4.15);
+  });
+  it("rejeita notas ausentes, decimais e fora de 1–5", () => {
+    expect(isValidRatings({inovacao:4,clareza:5,relevancia:4,demonstracao:3.5})).toBe(false);
+    expect(isValidRatings({inovacao:4,clareza:5,relevancia:4})).toBe(false);
+    expect(isValidRatings({inovacao:0,clareza:5,relevancia:4,demonstracao:3})).toBe(false);
   });
 });
