@@ -15,6 +15,6 @@ const lines=[columns.join(","),...catalog.projetos.map(p=>[
   p.fontes.map(s=>s.arquivo+"#"+s.pagina).join(";")
 ].map(quote).join(","))];
 fs.mkdirSync(path.dirname(output),{recursive:true});
-fs.writeFileSync(output,"\uFEFF"+lines.join("\\r\\n")+"\r
+fs.writeFileSync(output,"\uFEFF"+lines.join(String.fromCharCode(13,10))+String.fromCharCode(13,10),"utf8");
 ","utf8");
 console.log("CSV gerado: "+path.relative(root,output)+" ("+catalog.projetos.length+" projetos).");
