@@ -11,7 +11,7 @@ npm run audit:catalog
 npm run build
 ```
 
-Cobertura atual:
+O exportador deve gerar 47 linhas no CSV (cabeçalho + 46 projetos). O pipeline valida essa contagem.\n\nCobertura atual:
 - 46 registros, 24 nacionais e 22 extensão;
 - IDs estáveis, unicidade e títulos AGROSENTINELA / TRAÇO VIVO separados;
 - busca sem acentos sem modificar títulos originais;
