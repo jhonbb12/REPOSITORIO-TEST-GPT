@@ -16,7 +16,7 @@ export function isValidRatings(value: unknown): value is Ratings {
   if (!value || typeof value !== "object") return false;
   return CRITERIA.every(({ id }) => {
     const n = (value as Record<string, unknown>)[id];
-    return Number.isInteger(n) && Number(n) >= 1 && Number(n) <= 5;
+    return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 5;
   });
 }
 
