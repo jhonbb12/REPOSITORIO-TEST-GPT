@@ -8,7 +8,7 @@ Protótipo acadêmico de participação popular educativa para os projetos do IF
 - Fonte versionada no frontend: `public/data/projects.json.gz` (JSON original compactado em gzip; validado no carregamento).
 - Interface: catálogo, busca sem acentos, filtros por modalidade/área/dia, detalhes e formulário com prévia ponderada.
 - Critérios: criatividade e inovação 30%; clareza da apresentação 30%; relevância e impacto 25%; demonstração e resultados 15%.
-- Backend Apps Script: regra de voto por código + projeto, LockService, idempotência, recibo e endpoint agregado de ranking.
+- Backend Apps Script: regra de voto por código + projeto, LockService, idempotência, recibo, limitação de tentativas inválidas, importação do catálogo por commit imutável e endpoint agregado de ranking. Telas dinâmicas de avaliação/ranking usam HTML Service + google.script.run como fallback seguro.
 - CI: testes, auditoria do catálogo, exportação CSV, build e auditoria de dependências (zero vulnerabilidades no último run concluído). Integração real, planilha e deploy público ainda não homologados.
 - Branch de trabalho: `feat/universo-if-avalia-mvp`. `main` não foi alterada.
 
@@ -38,7 +38,7 @@ Os dois PDFs de origem e a metodologia estão descritos em `docs/AUDITORIA_CATAL
 
 As quatro notas são inteiras de 1 a 5. O backend recalcula a nota ponderada:
 `0,30*C1 + 0,30*C2 + 0,25*C3 + 0,15*C4`.
-O exemplo [4,5,4,3] resulta em 4,15. A interface não confirma nem envia votos nesta fase porque o fluxo Pages ↔ Apps Script ainda não foi testado em navegador real.
+O exemplo [4,5,4,3] resulta em 4,15. A navegação do Pages direciona o visitante para a tela de avaliação do HTML Service quando VITE_APPS_SCRIPT_URL estiver configurada. A integração ainda não foi testada em navegador real.
 
 ## Regra de participação
 
@@ -57,7 +57,7 @@ Siga `docs/CONFIGURAR_GOOGLE.md`. Planilha e administração devem permanecer pr
 - G0 GitHub/repositório/branch/autorização: PASS.
 - G1 catálogo 46 = 24 + 22, IDs e estrutura: PASS (validador do kit e teste automatizado).
 - G2 interface e testes automatizados: PASS para build/testes; QA manual responsivo/acessibilidade ainda pendente.
-- G3 código Apps Script e regras: implementado; teste em runtime Google ainda NOT_RUN.
+- G3 código Apps Script e regras: implementado; testes offline do Apps Script com planilha simulada adicionados; runtime Google ainda NOT_RUN.
 - G4 voto real, recibo, readback e duplicidade: BLOCKED até planilha, implantação e teste real.
 - G5 build CI: PASS; publicação GitHub Pages: BLOCKED até aprovação explícita.
 - G6 QA independente: NOT_RUN.
