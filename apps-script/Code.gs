@@ -1,7 +1,6 @@
 /**
  * Universo IF Avalia — Apps Script + Google Sheets.
- * Configure a propriedade de script SPREADSHEET_ID antes de executar setupSheets().
- * O acesso público não deve ser liberado antes de revisão e testes com planilha de homologação.
+ * A planilha deve permanecer privada. A votação inicia FECHADA.
  */
 const SHEETS = {
   projetos: ["Projetos", ["id","titulo","modalidade","area_tematica","data","inicio","fim","formato","local","fontes_paginas"]],
@@ -23,7 +22,7 @@ function setupSheets() {
   return "Abas e configurações iniciais verificadas. A votação permanece FECHADA.";
 }
 
-/** Registra apenas o hash do token. Execute manualmente no editor, nunca exponha como endpoint. */
+/** Registra somente SHA-256 do token. Execute manualmente no editor, nunca como endpoint. */
 function registerCode(token) {
   const value=String(token||"").trim();
   if (value.length<24) throw new Error("Use token aleatório de alta entropia (mínimo recomendado: 24 caracteres).");
@@ -45,11 +44,32 @@ function setVotingStatus(status) {
   return "Status atualizado para "+normalized+".";
 }
 
+/** Pages pode abrir esta URL, mas avaliação e ranking dinâmicos usam google.script.run. */
 function doGet(e) {
   const action=String(e && e.parameter && e.parameter.action || "");
-  if (action!=="ranking") return json_({ok:false,error:"AÇÃO_INVÁLIDA"});
-  try { return json_({ok:true,ranking:getPublicRanking_()}); }
-  catch (err) { return json_({ok:false,error:"ERRO_INTERNO"}); }
+  if (action==="ranking") {
+    try { return json_({ok:true,ranking:getPublicRanking_()}); }
+    catch (err) { return json_({ok:false,error:"ERRO_INTERNO"}); }
+  }
+  const page=HtmlService.createTemplateFromFile("Index");
+  page.initialProjectId=String(e && e.parameter && e.parameter.projectId || "");
+  return page.evaluate().setTitle("Universo IF Avalia").addMetaTag("viewport","width=device-width, initial-scale=1");
+}
+
+/** Funções públicas chamadas exclusivamente pela interface HTML Service. */
+function getProjectsForClient() {
+  const rows=ensureSheet_(openSpreadsheet_(),SHEETS.projetos).getDataRange().getValues().slice(1);
+  return rows.filter(r=>r[0]).map(r=>({
+    id:String(r[0]),titulo:String(r[1]||""),modalidade:String(r[2]||""),
+    area_tematica:String(r[3]||""),data:String(r[4]||""),
+    inicio:String(r[5]||""),fim:String(r[6]||""),formato:String(r[7]||""),local:String(r[8]||"")
+  }));
+}
+function getRankingForClient() {
+  return getPublicRanking_();
+}
+function submitVoteFromClient(payload) {
+  return submitVote_(payload || {});
 }
 
 function doPost(e) {
@@ -84,18 +104,14 @@ function submitVote_(body) {
     const projects=projectSheet.getDataRange().getValues();
     if (!projects.some((r,i)=>i>0 && String(r[0])===projectId)) return {ok:false,error:"PROJETO_INVÁLIDO"};
     const codes=codeSheet.getDataRange().getValues();
-    if (!codes.some((r,i)=>i>0 && r[0]===codeHash && (r[1]===true || String(r[1]).toUpperCase()==="TRUE"))) {
-      return {ok:false,error:"CÓDIGO_INVÁLIDO"};
-    }
+    if (!codes.some((r,i)=>i>0 && r[0]===codeHash && (r[1]===true || String(r[1]).toUpperCase()==="TRUE"))) return {ok:false,error:"CÓDIGO_INVÁLIDO"};
     const votes=voteSheet.getDataRange().getValues();
     const previous=votes.find((r,i)=>i>0 && r[0]===requestHash);
     if (previous) {
       const same=previous[1]===codeHash && previous[2]===projectId && values.every((n,i)=>previous[i+3]===n);
       return same ? {ok:true,receipt:previous[8],repeated:true} : {ok:false,error:"ID_REQUISICAO_REUTILIZADO"};
     }
-    if (votes.some((r,i)=>i>0 && r[1]===codeHash && r[2]===projectId && r[10]==="VALID")) {
-      return {ok:false,error:"VOTO_DUPLICADO"};
-    }
+    if (votes.some((r,i)=>i>0 && r[1]===codeHash && r[2]===projectId && r[10]==="VALID")) return {ok:false,error:"VOTO_DUPLICADO"};
     const score=values.reduce((sum,n,i)=>sum+n*WEIGHTS[i],0);
     const receipt=Utilities.getUuid();
     voteSheet.appendRow([requestHash,codeHash,projectId,...values,score,receipt,new Date(),"VALID"]);
@@ -106,7 +122,7 @@ function submitVote_(body) {
   }
 }
 
-/** Retorna somente dados agregados. Nunca retorna códigos, hashes ou linhas individuais de votos. */
+/** Retorna somente agregados públicos, nunca códigos, hashes ou linhas individuais. */
 function getPublicRanking_() {
   const ss=openSpreadsheet_();
   const projectRows=ensureSheet_(ss,SHEETS.projetos).getDataRange().getValues().slice(1);
@@ -126,13 +142,10 @@ function getPublicRanking_() {
   const minimum=Math.max(5,Number(readConfig_(ensureSheet_(ss,SHEETS.config)).ranking_minimum)||5);
   const rows=projectRows.filter(r=>r[0]).map(r=>{
     const total=totals.get(String(r[0]))||{count:0,sum:0,criteria:[0,0,0,0],updated:null};
-    return {
-      id:String(r[0]),titulo:String(r[1]||""),modalidade:String(r[2]||""),
-      total_avaliacoes:total.count,
+    return {id:String(r[0]),titulo:String(r[1]||""),modalidade:String(r[2]||""),total_avaliacoes:total.count,
       media_ponderada:total.count?round2_(total.sum/total.count):null,
       medias_criterios:total.count?total.criteria.map(v=>round2_(v/total.count)):[null,null,null,null],
-      atualizado_em:total.updated?total.updated.toISOString():null
-    };
+      atualizado_em:total.updated?total.updated.toISOString():null};
   });
   const result=[];
   ["Mostra Nacional","Mostra de Extensão"].forEach(modality=>{
