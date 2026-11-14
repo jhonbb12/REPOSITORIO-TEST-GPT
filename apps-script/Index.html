@@ -125,7 +125,7 @@ function submitVote(event){
       byId("code").value="";pendingRequestId="";lastPayloadKey="";
       loadRanking();
     }else{
-      const messages={VOTO_DUPLICADO:"Este código já avaliou este projeto.",CÓDIGO_INVÁLIDO:"Código inválido ou desabilitado.",VOTAÇÃO_FECHADA:"A votação está fechada.",PROJETO_INVÁLIDO:"Projeto não encontrado na planilha.",NOTAS_INVÁLIDAS:"As quatro notas devem ser inteiras de 1 a 5."};
+      const messages={VOTO_DUPLICADO:"Este código já avaliou este projeto.",CÓDIGO_INVÁLIDO:"Código inválido ou desabilitado.",VOTAÇÃO_FECHADA:"A votação está fechada.",PROJETO_INVÁLIDO:"Projeto não encontrado na planilha.",NOTAS_INVÁLIDAS:"As quatro notas devem ser inteiras de 1 a 5.",MUITAS_TENTATIVAS:"Muitas tentativas inválidas. Aguarde dez minutos antes de tentar novamente."};
       setStatus("voteStatus",messages[result&&result.error]||("Avaliação recusada: "+(result&&result.error||"resposta inválida")),"error");
     }
   }).withFailureHandler(err=>{
