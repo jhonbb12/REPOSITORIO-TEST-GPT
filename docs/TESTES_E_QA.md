@@ -41,8 +41,8 @@ Cobertura atual:
 ## Estado da evidência
 
 - Validador oficial do kit: PASS.
-- Testes offline do Apps Script (`tests/apps-script.test.ts`): adicionados; aguardando execução no CI do commit atual.
-- Testes automatizados, auditoria do catálogo, exportação CSV e build: PASS no run `43267730833` (confirmar novamente após novos commits).
+- Testes offline do Apps Script (`tests/apps-script.test.ts`): PASS no CI `43543659923` (Modelo B, duplicidade, idempotência, votação fechada e notas inválidas).
+- Testes automatizados, auditoria do catálogo, exportação CSV e build: PASS no run `43543659923` para o commit `519884acda32fecda60d39da72018c3cbdb2c863`.
 - QA manual em dispositivos: NOT_RUN.
 - Teste de Apps Script no runtime Google: NOT_RUN (os testes offline usam runtime simulado e não substituem a execução no Google).
 - CORS, recibo e readback público: BLOCKED.
