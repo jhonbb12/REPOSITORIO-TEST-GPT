@@ -53,18 +53,7 @@ export default function App() {
   },[]);
 
   useEffect(() => {
-    if (tab !== "ranking") return;
-    if (!API_URL) { setRankingState("error"); return; }
-    let active=true;
-    setRankingState("loading");
-    fetch(`${API_URL}?action=ranking`)
-      .then(r => { if (!r.ok) throw new Error("Falha ao consultar ranking."); return r.json(); })
-      .then(data => {
-        if (!data.ok || !Array.isArray(data.ranking)) throw new Error("Resposta de ranking inválida.");
-        if (active) { setRanking(data.ranking as RankingRow[]); setRankingState("ready"); }
-      })
-      .catch(() => { if (active) setRankingState("error"); });
-    return () => { active=false; };
+    if (tab === "ranking") setRankingState("error");
   },[tab]);
 
   const areas=useMemo(()=>[...new Set(catalog.map(p=>p.area_tematica))].sort((a,b)=>a.localeCompare(b,"pt-BR")),[catalog]);
@@ -139,10 +128,10 @@ export default function App() {
       {tab==="ranking" && <section>
         <p className="eyebrow">RESULTADOS AGREGADOS</p><h2>Ranking de projetos</h2>
         <p className="muted">A classificação é separada por modalidade e exige pelo menos cinco avaliações válidas. Empates são resolvidos pela média descendente e, persistindo, pelo ID em ordem crescente.</p>
-        {API_URL && <p><a href={API_URL} target="_blank" rel="noreferrer">Abrir ranking atualizado na tela segura</a></p>}
+        {API_URL && <p><a href={API_URL} target="_blank" rel="noreferrer">Consultar ranking atualizado na tela segura do Apps Script</a></p>}
         <label className="ranking-filter">Modalidade<select value={rankingModality} onChange={e=>setRankingModality(e.target.value as "NAC"|"EXT")}><option value="NAC">Mostra Nacional</option><option value="EXT">Mostra de Extensão</option></select></label>
         {rankingState==="loading" && <div className="empty-state" role="status"><h3>Consultando resultados…</h3></div>}
-        {rankingState==="error" && <div className="empty-state"><h3>Ranking ainda não disponível</h3><p>O endpoint agregado do Apps Script ainda não foi conectado e homologado.</p></div>}
+        {rankingState==="error" && <div className="empty-state"><h3>Consulta dinâmica no Apps Script</h3><p>Para evitar depender de CORS ou de uma confirmação incerta entre hospedagens, abra a tela segura do Apps Script pelo link acima. Lá, selecione a modalidade e consulte os agregados diretamente da planilha.</p></div>}
         {rankingState==="ready" && filteredRanking.map(row=><article className="project-card" key={row.id}><div><span className="project-id">{row.colocacao?"#"+row.colocacao:"Aguardando amostra mínima"} · {row.id}</span><h3>{row.titulo}</h3><p>{row.total_avaliacoes} avaliações · {row.media_ponderada===null?"—":row.media_ponderada.toFixed(2).replace(".",",")+"/5"}</p><p>Médias: {row.medias_criterios.map((n,i)=>CRITERIA[i].label+": "+(n===null?"—":n.toFixed(2).replace(".",","))).join(" · ")}</p><p>Atualizado: {row.atualizado_em?new Date(row.atualizado_em).toLocaleString("pt-BR"):"—"}</p></div><button onClick={()=>{setSelectedId(row.id);setTab("projects");}}>Ver projeto</button></article>)}
       </section>}
       <footer><p>O Universo IF Avalia é um protótipo de participação popular educativa. Não representa avaliação oficial, científica ou institucional dos projetos. A programação pode sofrer alterações pela organização do evento.</p></footer>
