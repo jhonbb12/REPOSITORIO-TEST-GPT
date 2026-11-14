@@ -11,13 +11,20 @@ Este procedimento publica somente a interface de demonstração. A votação per
 
 Não selecione implantação por branch/folder: o projeto usa o workflow `.github/workflows/pages.yml`.
 
-## 2. Integrar a branch de desenvolvimento
+## 2. Configurar a URL do Apps Script (quando o Web App estiver implantado)
+
+1. No repositório, abra **Settings → Secrets and variables → Actions → Variables**.
+2. Crie a variável de repositório `VITE_APPS_SCRIPT_URL` com a URL `/exec` da implantação do Web App.
+3. A URL é configuração pública do endpoint; nunca coloque tokens de votação nela.
+4. Se o Web App ainda não foi implantado, deixe a variável ausente. O catálogo e as telas continuam disponíveis, mas o ranking exibirá indisponibilidade.
+
+## 3. Integrar a branch de desenvolvimento
 
 O workflow atual só publica a partir da branch `main`. Antes da implantação, o PR #1 precisa ser revisado e integrado à `main`. Não faça merge enquanto os testes e a revisão não estiverem concluídos.
 
 PR: https://github.com/jhonbb12/REPOSITORIO-TEST-GPT/pull/1
 
-## 3. Executar a publicação manual
+## 4. Executar a publicação manual
 
 Depois que o PR estiver integrado:
 
@@ -29,13 +36,13 @@ Depois que o PR estiver integrado:
 6. Confirme **Run workflow**.
 7. Aguarde os jobs `build` e `deploy) terminarem com sucesso.
 
-## 4. Endereço esperado
+## 5. Endereço esperado
 
 https://jhonbb12.github.io/REPOSITORIO-TEST-GPT/
 
 O endereço só estará ativo depois que o job `deploy` terminar com sucesso. Se o repositório for privado, confirme se o plano e as configurações da organização permitem GitHub Pages.
 
-## 5. Limites desta primeira publicação
+## 6. Limites desta primeira publicação
 
 - A página é uma demonstração/homologação.
 - O botão de envio de voto permanece bloqueado no frontend.
