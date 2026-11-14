@@ -30,11 +30,11 @@ Gere tokens aleatórios de alta entropia (mínimo recomendado: 24 caracteres; pr
 4. Se o acesso anônimo não estiver disponível, não contorne a política: marque `BLOQUEADO_ACESSO_PUBLICO` e use demonstração local/manual.
 5. Não publique a planilha nem conceda acesso público a ela.
 
-O endpoint GET `?action=ranking` retorna somente agregados. O POST `action=submitVote` valida token, projeto, notas, estado, duplicidade e grava sob `LockService`.
+A tela HTML Service usa `google.script.run` para consultar projetos/ranking e enviar avaliações. O endpoint GET `?action=ranking` retorna somente agregados. O POST `action=submitVote` permanece disponível para integração externa, mas não deve ser considerado homologado até teste real. O servidor valida token, projeto, notas, estado, duplicidade e grava sob `LockService`. Tokens com 12 ou mais tentativas inválidas em dez minutos são temporariamente bloqueados pelo hash do próprio token; nenhum IP ou identificador do visitante é coletado.
 
 ## 6. CORS e homologação obrigatória
 
-Apps Script ContentService não é uma API CORS convencional. Não use `mode: "no-cors"`, não considere envio de requisição como sucesso e nunca mostre confirmação sem recibo do servidor. O frontend atual mantém o envio desabilitado até o teste real.
+Apps Script ContentService não é uma API CORS convencional. Não use `mode: "no-cors"`, não considere envio de requisição como sucesso e nunca mostre confirmação sem recibo do servidor. A tela principal do Pages direciona a avaliação para o HTML Service; o envio só será possível depois da configuração da URL do Web App.
 
 Teste no endereço Pages, em janela anônima e em smartphone: GET do ranking, POST válido, recibo, readback na aba `Avaliacoes`, segundo voto do mesmo código no mesmo projeto recusado e mesmo código em outro projeto aceito. Se a comunicação direta falhar, use o fallback do prompt: telas dinâmicas hospedadas no HTML Service com `google.script.run`, mantendo o catálogo e a navegação principal no Pages. Não use `ALLOWALL` sem mitigação de clickjacking.
 
