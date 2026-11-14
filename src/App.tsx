@@ -133,14 +133,8 @@ export default function App() {
         <p className="eyebrow">PARTICIPAÇÃO</p><h2>Avaliar um projeto</h2>
         <p className="muted">Cada código permite avaliar vários projetos, mas somente uma vez cada projeto. A avaliação é concluída na tela segura do Google Apps Script, que se comunica diretamente com o servidor por google.script.run.</p>
         {API_URL ? <p><a className="primary small" href={API_URL + (selectedId ? "?projectId=" + encodeURIComponent(selectedId) : "")}>Abrir avaliação segura</a></p> : <p className="form-notice" role="status">Tela segura ainda não configurada. Nenhum voto pode ser enviado nesta versão.</p>}
-        <form className="evaluation-form" onSubmit={submitVote}>
-          <label>Projeto<select value={selectedId} onChange={e=>setSelectedId(e.target.value)} required><option value="">Selecione um projeto</option>{catalog.map(p=><option key={p.id} value={p.id}>{p.id} — {p.titulo}</option>)}</select></label>
-          <label>Código de participação<input type="password" autoComplete="off" value={code} onChange={e=>setCode(e.target.value)} placeholder="Código fornecido pela organização" required/></label>
-          {CRITERIA.map(c=><fieldset key={c.id}><legend>{c.label} <small>({Math.round(c.weight*100)}%)</small></legend><div className="rating-options">{[1,2,3,4,5].map(n=><label key={n}><input type="radio" name={c.id} checked={ratings[c.id]===n} onChange={()=>setRatings(old=>({...old,[c.id]:n}))}/><span>{n}</span></label>)}</div><small>{RATING_LABELS[ratings[c.id]]}</small></fieldset>)}
-          <div className="score-preview"><span>Prévia ponderada</span><strong>{score.toFixed(2).replace(".",",")} / 5</strong></div>
-          <button className="primary" type="submit">Enviar avaliação</button>
-          {notice && <p className="form-notice" role="status">{notice}</p>}
-        </form>
+        {selected && <div className="project-card"><div><span className="project-id">{selected.id} · {selected.modalidade}</span><h3>{selected.titulo}</h3><p>{selected.area_tematica}</p><p>{selected.data} · {selected.inicio}–{selected.fim} · {selected.local}</p></div></div>}
+        {API_URL ? <div className="evaluation-form"><p>A avaliação será concluída em uma tela segura do Google Apps Script. O código e as notas serão informados diretamente nessa tela e nunca serão enviados pela URL.</p><a className="primary" href={API_URL + (selectedId ? "?projectId=" + encodeURIComponent(selectedId) : "")}>Abrir avaliação segura</a></div> : <div className="alert" role="status"><strong>Integração ainda não configurada.</strong><p>Defina VITE_APPS_SCRIPT_URL após implantar e homologar o Web App. Nenhum voto será enviado nesta versão.</p></div>}
       </section>}
       {tab==="ranking" && <section>
         <p className="eyebrow">RESULTADOS AGREGADOS</p><h2>Ranking de projetos</h2>
