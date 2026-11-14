@@ -11,7 +11,9 @@ npm run audit:catalog
 npm run build
 ```
 
-O exportador deve gerar 47 linhas no CSV (cabeçalho + 46 projetos). O pipeline valida essa contagem.\n\nCobertura atual:
+O exportador deve gerar 47 linhas no CSV (cabeçalho + 46 projetos). O pipeline valida essa contagem.
+
+Cobertura atual:
 - 46 registros, 24 nacionais e 22 extensão;
 - IDs estáveis, unicidade e títulos AGROSENTINELA / TRAÇO VIVO separados;
 - busca sem acentos sem modificar títulos originais;
@@ -39,8 +41,7 @@ O exportador deve gerar 47 linhas no CSV (cabeçalho + 46 projetos). O pipeline 
 ## Estado da evidência
 
 - Validador oficial do kit: PASS.
-- Testes locais via CI: PASS no commit anterior ao último conjunto de alterações; nova execução em andamento/pendente.
-- Build: PASS no commit anterior ao último conjunto de alterações; nova execução pendente.
+- Testes automatizados, auditoria do catálogo, exportação CSV e build: PASS no run `43267730833` (confirmar novamente após novos commits).
 - QA manual em dispositivos: NOT_RUN.
 - Teste de Apps Script no runtime Google: NOT_RUN.
 - CORS, recibo e readback público: BLOCKED.
