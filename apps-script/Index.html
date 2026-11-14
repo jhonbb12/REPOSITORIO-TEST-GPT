@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f3f6fb}
+    *{box-sizing:border-box}body{margin:0}.wrap{max-width:900px;margin:auto;padding:20px}
+    header{background:#123b70;color:#fff;padding:24px;border-radius:18px;margin:12px 0 18px}
+    h1{margin:4px 0;font-size:clamp(1.7rem,5vw,2.4rem)}header p{margin:6px 0;opacity:.9}
+    nav{display:flex;gap:8px;margin:12px 0 18px}button,.tab{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:12px 16px}
+    .tab{background:#e1e8f2;color:#17365f}.tab.active,.primary{background:#1558a6;color:#fff}
+    .panel,.project{background:#fff;border:1px solid #dce3ed;border-radius:14px;padding:18px;margin:12px 0}
+    label{display:block;font-weight:600;margin:12px 0}input,select{display:block;width:100%;font:inherit;padding:12px;border:1px solid #aab8ca;border-radius:9px;margin-top:6px;background:white}
+    fieldset{border:1px solid #dce3ed;border-radius:12px;margin:14px 0;padding:12px}legend{font-weight:700;padding:0 6px}
+    .ratings{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.ratings label{margin:0;text-align:center;border:1px solid #dce3ed;border-radius:9px;padding:8px}
+    .ratings input{width:auto;display:inline;margin:0 4px 0 0}.muted{color:#526178;font-size:.94rem}.status{padding:12px;border-radius:10px;background:#edf3fa;margin:12px 0;overflow-wrap:anywhere}
+    .score{font-weight:800;font-size:1.25rem}.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .error{background:#fff0ef;color:#8b211b}.success{background:#eaf7ee;color:#14532d}.hidden{display:none}
+    .project h3{margin:4px 0}.project p{margin:5px 0}.small{font-size:.86rem}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e19a26;outline-offset:2px}
+    @media(max-width:520px){.wrap{padding:12px}.panel{padding:14px}nav button{flex:1;padding:11px 7px}.ratings{gap:4px}.ratings label{padding:8px 2px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header><p>IFMA · PARTICIPAÇÃO POPULAR EDUCATIVA</p><h1>Universo IF Avalia</h1><p>Área segura de avaliação e consulta de resultados</p></header>
+  <nav aria-label="Seções"><button class="tab active" id="voteTab" type="button">Avaliar</button><button class="tab" id="rankTab" type="button">Ranking</button></nav>
+  <main>
+    <section id="votePanel" class="panel">
+      <h2>Avaliar projeto</h2>
+      <p class="muted">Um código pode avaliar vários projetos, mas apenas uma vez cada projeto. O envio só é confirmado após recibo do servidor.</p>
+      <form id="voteForm">
+        <label>Projeto<select id="project" required><option value="">Carregando projetos…</option></select></label>
+        <label>Código de participação<input id="code" type="password" autocomplete="off" required maxlength="256"></label>
+        <div id="criteria"></div>
+        <p class="score">Prévia ponderada: <span id="score">3,00</span> / 5</p>
+        <button class="primary" id="submit" type="submit">Enviar avaliação</button>
+      </form>
+      <div id="voteStatus" class="status" role="status" aria-live="polite">Carregando catálogo da planilha…</div>
+    </section>
+    <section id="rankPanel" class="hidden">
+      <div class="panel"><h2>Ranking público</h2><label>Modalidade<select id="modality"><option value="Mostra Nacional">Mostra Nacional</option><option value="Mostra de Extensão">Mostra de Extensão</option></select></label><button class="primary" id="refresh" type="button">Atualizar ranking</button><p class="muted">Somente projetos com pelo menos cinco avaliações válidas recebem colocação. Empate: média ponderada decrescente e, depois, ID crescente.</p><div id="rankingStatus" class="status" role="status" aria-live="polite">Aguardando consulta.</div></div>
+      <div id="ranking"></div>
+    </section>
+  </main>
+  <p class="muted small">Protótipo acadêmico. Não representa avaliação oficial ou científica do evento.</p>
+</div>
+<script>
+const initialProjectId = <?!= JSON.stringify(initialProjectId) ?>;
+const criteria = [
+  {id:"inovacao",label:"Criatividade e inovação",weight:.30},
+  {id:"clareza",label:"Clareza da apresentação",weight:.30},
+  {id:"relevancia",label:"Relevância e impacto",weight:.25},
+  {id:"demonstracao",label:"Demonstração e resultados",weight:.15}
+];
+const labels={1:"Muito ruim",2:"Ruim",3:"Regular",4:"Bom",5:"Excelente"};
+let projects=[];
+let pendingRequestId="";
+let lastPayloadKey="";
+const byId=id=>document.getElementById(id);
+function setStatus(id,message,kind){const el=byId(id);el.textContent=message;el.className="status "+(kind||"");}
+function showPanel(which){
+  const vote=which==="vote";
+  byId("votePanel").classList.toggle("hidden",!vote);
+  byId("rankPanel").classList.toggle("hidden",vote);
+  byId("voteTab").classList.toggle("active",vote);
+  byId("rankTab").classList.toggle("active",!vote);
+  if(!vote) loadRanking();
+}
+function makeCriteria(){
+  const host=byId("criteria");host.textContent="";
+  criteria.forEach(c=>{
+    const fs=document.createElement("fieldset"),legend=document.createElement("legend");
+    legend.textContent=c.label+" ("+Math.round(c.weight*100)+"%)";fs.appendChild(legend);
+    const group=document.createElement("div");group.className="ratings";
+    for(let n=1;n<=5;n++){
+      const label=document.createElement("label"),input=document.createElement("input");
+      input.type="radio";input.name=c.id;input.value=String(n);input.checked=n===3;
+      input.addEventListener("change",()=>{pendingRequestId="";updateScore();});
+      label.appendChild(input);label.appendChild(document.createTextNode(String(n)));group.appendChild(label);
+    }
+    const hint=document.createElement("p");hint.className="muted small";hint.id="hint-"+c.id;hint.textContent=labels[3];
+    fs.appendChild(group);fs.appendChild(hint);host.appendChild(fs);
+  });
+  host.addEventListener("change",()=>criteria.forEach(c=>{
+    const selected=host.querySelector('input[name="'+c.id+'"]:checked');
+    if(selected) byId("hint-"+c.id).textContent=labels[Number(selected.value)];
+  }));
+}
+function getRatings(){
+  const out={};
+  criteria.forEach(c=>{const selected=document.querySelector('input[name="'+c.id+'"]:checked');out[c.id]=selected?Number(selected.value):null;});
+  return out;
+}
+function updateScore(){
+  const r=getRatings(),value=criteria.reduce((s,c)=>s+(Number(r[c.id])||0)*c.weight,0);
+  byId("score").textContent=value.toFixed(2).replace(".",",");
+}
+function loadProjects(){
+  google.script.run.withSuccessHandler(rows=>{
+    projects=Array.isArray(rows)?rows:[];
+    const select=byId("project");select.textContent="";
+    const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecione um projeto";select.appendChild(placeholder);
+    projects.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.id+" — "+p.titulo;select.appendChild(o);});
+    if(initialProjectId) select.value=initialProjectId;
+    setStatus("voteStatus",projects.length+" projetos carregados da planilha.","");
+  }).withFailureHandler(err=>setStatus("voteStatus","Falha ao carregar projetos: "+(err.message||err),"error")).getProjectsForClient();
+}
+function submitVote(event){
+  event.preventDefault();
+  const code=byId("code").value.trim(),projectId=byId("project").value,ratings=getRatings();
+  if(!projectId||!code||criteria.some(c=>!Number.isInteger(ratings[c.id])||ratings[c.id]<1||ratings[c.id]>5)){
+    setStatus("voteStatus","Preencha o projeto, o código e as quatro notas de 1 a 5.","error");return;
+  }
+  const key=JSON.stringify([code,projectId,ratings]);
+  if(!pendingRequestId||key!==lastPayloadKey){pendingRequestId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2));lastPayloadKey=key;}
+  const payload={code:code,projectId:projectId,ratings:ratings,requestId:pendingRequestId};
+  byId("submit").disabled=true;setStatus("voteStatus","Enviando e aguardando confirmação do servidor…","");
+  google.script.run.withSuccessHandler(result=>{
+    byId("submit").disabled=false;
+    if(result&&result.ok&&result.receipt){
+      setStatus("voteStatus","Avaliação registrada. Recibo: "+result.receipt+(result.repeated?" (retentativa idempotente).":""),"success");
+      byId("code").value="";pendingRequestId="";lastPayloadKey="";
+      loadRanking();
+    }else{
+      const messages={VOTO_DUPLICADO:"Este código já avaliou este projeto.",CÓDIGO_INVÁLIDO:"Código inválido ou desabilitado.",VOTAÇÃO_FECHADA:"A votação está fechada.",PROJETO_INVÁLIDO:"Projeto não encontrado na planilha.",NOTAS_INVÁLIDAS:"As quatro notas devem ser inteiras de 1 a 5."};
+      setStatus("voteStatus",messages[result&&result.error]||("Avaliação recusada: "+(result&&result.error||"resposta inválida")),"error");
+    }
+  }).withFailureHandler(err=>{
+    byId("submit").disabled=false;
+    setStatus("voteStatus","Não foi possível confirmar a resposta. Você pode tentar novamente sem alterar projeto, código ou notas; a mesma requisição será reutilizada. "+(err.message||""),"error");
+  }).submitVoteFromClient(payload);
+}
+function loadRanking(){
+  setStatus("rankingStatus","Consultando dados agregados da planilha…","");
+  byId("ranking").textContent="";
+  google.script.run.withSuccessHandler(rows=>{
+    const modality=byId("modality").value;
+    const filtered=(Array.isArray(rows)?rows:[]).filter(r=>r.modalidade===modality);
+    const host=byId("ranking");
+    filtered.forEach(r=>{
+      const card=document.createElement("article");card.className="project";
+      const h=document.createElement("h3");h.textContent=(r.colocacao?"#"+r.colocacao:"Aguardando amostra mínima")+" · "+r.titulo;card.appendChild(h);
+      const avg=r.media_ponderada===null?"—":Number(r.media_ponderada).toFixed(2).replace(".",",")+"/5";
+      const p=document.createElement("p");p.textContent=avg+" · "+r.total_avaliacoes+" avaliações";card.appendChild(p);
+      const criteriaText=(r.medias_criterios||[]).map((v,i)=>criteria[i].label+": "+(v===null?"—":Number(v).toFixed(2).replace(".",","))).join(" | ");
+      const details=document.createElement("p");details.className="muted small";details.textContent=criteriaText;card.appendChild(details);
+      const updated=document.createElement("p");updated.className="muted small";updated.textContent="Atualizado: "+(r.atualizado_em?new Date(r.atualizado_em).toLocaleString("pt-BR"):"—");card.appendChild(updated);
+      host.appendChild(card);
+    });
+    setStatus("rankingStatus",filtered.length+" projetos no recorte selecionado. Dados atualizados na consulta.","success");
+  }).withFailureHandler(err=>setStatus("rankingStatus","Falha ao consultar ranking: "+(err.message||err),"error")).getRankingForClient();
+}
+byId("voteTab").addEventListener("click",()=>showPanel("vote"));
+byId("rankTab").addEventListener("click",()=>showPanel("rank"));
+byId("refresh").addEventListener("click",loadRanking);
+byId("modality").addEventListener("change",loadRanking);
+byId("voteForm").addEventListener("submit",submitVote);
+byId("project").addEventListener("change",()=>{pendingRequestId="";});
+byId("code").addEventListener("input",()=>{pendingRequestId="";});
+makeCriteria();updateScore();loadProjects();
+</script>
+</body>
+</html>
