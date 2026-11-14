@@ -1,14 +1,14 @@
 # Configurar Google Sheets e Apps Script
 
-Esta etapa ainda não foi executada. Use uma planilha de teste da equipe; não use planilha pública nem dados pessoais.
+Status informado pelo responsável: planilha de homologação criada, propriedade `SPREADSHEET_ID` configurada e `setupSheets()` executado. Confirme visualmente as quatro abas e mantenha a planilha privada. A importação do catálogo e os testes de runtime ainda precisam ser concluídos.
 
 ## 1. Criar a planilha privada
 
-1. Crie uma planilha Google na conta da equipe e mantenha o compartilhamento restrito aos responsáveis.
-2. Abra Extensões → Apps Script.
-3. Substitua o conteúdo do editor pelo arquivo `apps-script/Code.gs`.
-4. Em Configurações do projeto → Propriedades do script, crie `SPREADSHEET_ID` com o ID da planilha (trecho entre `/d/` e `/edit` na URL).
-5. Salve e execute `setupSheets()`. Autorize apenas os escopos solicitados pelo Google.
+1. Confirme que a planilha de homologação está privada.
+2. Confirme que o editor Apps Script está vinculado à planilha correta.
+3. Confirme em Propriedades do script que `SPREADSHEET_ID` aponta para essa planilha.
+4. Confirme que `setupSheets()` terminou sem erro e que as quatro abas existem.
+5. Se o Google apresentar alerta de app não verificado, confira o proprietário do projeto e os escopos solicitados; não ignore o alerta se o desenvolvedor não for reconhecido.
 
 ## 2. Preencher a aba Projetos
 
