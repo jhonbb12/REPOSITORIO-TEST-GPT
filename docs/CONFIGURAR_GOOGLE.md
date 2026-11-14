@@ -1,0 +1,46 @@
+# Configurar Google Sheets e Apps Script
+
+Status informado pelo responsável: planilha de homologação criada, propriedade `SPREADSHEET_ID` configurada e `setupSheets()` executado. Confirme visualmente as quatro abas e mantenha a planilha privada. A importação do catálogo e os testes de runtime ainda precisam ser concluídos.
+
+## 1. Criar a planilha privada
+
+1. Confirme que a planilha de homologação está privada.
+2. Confirme que o editor Apps Script está vinculado à planilha correta.
+3. Confirme em Propriedades do script que `SPREADSHEET_ID` aponta para essa planilha.
+4. Confirme que `setupSheets()` terminou sem erro e que as quatro abas existem.
+5. Se o Google apresentar alerta de app não verificado, confira o proprietário do projeto e os escopos solicitados; não ignore o alerta se o desenvolvedor não for reconhecido.
+
+## 2. Preencher a aba Projetos
+
+A aba `Projetos` deve conter os 46 registros do CSV oficial do kit. Na raiz do projeto, execute `npm run export:catalog-csv`. O comando gera `exports/universo_if_catalogo_46_projetos_v1.0.csv` diretamente do catálogo gzip auditado. Importe esse CSV para a aba, substituindo seu conteúdo. Preserve a ordem das colunas: `id`, `titulo`, `modalidade`, `area_tematica`, `data`, `inicio`, `fim`, `formato`, `local`, `fontes_paginas`. A coluna `fontes_paginas` registra arquivo e página de origem. O backend lê as três primeiras colunas para validar projetos e montar o ranking; as demais preservam metadados públicos. Não altere IDs ou títulos.
+
+## 3. Registrar códigos de teste
+
+Gere tokens aleatórios de alta entropia (mínimo recomendado: 24 caracteres; prefira 32 bytes aleatórios em formato hexadecimal). No editor Apps Script, execute manualmente `registerCode("TOKEN_DE_TESTE")` para cada token. O script armazena somente SHA-256. Não coloque tokens no GitHub, em URLs, logs ou mensagens públicas. A aba `Codigos` e a planilha inteira devem permanecer privadas.
+
+## 4. Estado da votação
+
+`setupSheets()` inicializa `voting_status=CLOSED`, `ranking_minimum=5` e `catalog_version=1.0`. Mantenha a votação fechada durante a configuração. A função administrativa `setVotingStatus("OPEN")` só deve ser executada após revisão, teste em planilha de homologação e autorização explícita. Para fechar, execute `setVotingStatus("CLOSED")`.
+
+## 5. Implantar como Web App — somente após autorização
+
+1. Implante → Nova implantação → Tipo: Aplicativo da web.
+2. Executar como: proprietário que implantou.
+3. Acesso: qualquer pessoa, inclusive anônima, **somente se a política institucional e a conta permitirem**.
+4. Se o acesso anônimo não estiver disponível, não contorne a política: marque `BLOQUEADO_ACESSO_PUBLICO` e use demonstração local/manual.
+5. Não publique a planilha nem conceda acesso público a ela.
+
+A tela HTML Service usa `google.script.run` para consultar projetos/ranking e enviar avaliações. O endpoint GET `?action=ranking` retorna somente agregados. O POST `action=submitVote` permanece disponível para integração externa, mas não deve ser considerado homologado até teste real. O servidor valida token, projeto, notas, estado, duplicidade e grava sob `LockService`. Tokens com 12 ou mais tentativas inválidas em dez minutos são temporariamente bloqueados pelo hash do próprio token; nenhum IP ou identificador do visitante é coletado.
+
+## 6. CORS e homologação obrigatória
+
+Apps Script ContentService não é uma API CORS convencional. Não use `mode: "no-cors"`, não considere envio de requisição como sucesso e nunca mostre confirmação sem recibo do servidor. A tela principal do Pages direciona a avaliação para o HTML Service; o envio só será possível depois da configuração da URL do Web App.
+
+Teste no endereço Pages, em janela anônima e em smartphone: GET do ranking, POST válido, recibo, readback na aba `Avaliacoes`, segundo voto do mesmo código no mesmo projeto recusado e mesmo código em outro projeto aceito. Se a comunicação direta falhar, use o fallback do prompt: telas dinâmicas hospedadas no HTML Service com `google.script.run`, mantendo o catálogo e a navegação principal no Pages. Não use `ALLOWALL` sem mitigação de clickjacking.
+
+## Abas
+
+- `Projetos`: catálogo público versionado.
+- `Codigos`: hashes de tokens e estado; privado.
+- `Avaliacoes`: hash do código, hash de requisição, projeto, notas, média, recibo, timestamp e estado; privado.
+- `Configuracao`: status, mínimo do ranking e versão do catálogo.

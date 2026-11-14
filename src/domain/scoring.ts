@@ -1,0 +1,20 @@
+export const CRITERIA = [
+  { id: "inovacao", label: "Criatividade e inovação", weight: 0.30 },
+  { id: "clareza", label: "Clareza da apresentação", weight: 0.30 },
+  { id: "relevancia", label: "Relevância e impacto", weight: 0.25 },
+  { id: "demonstracao", label: "Demonstração e resultados", weight: 0.15 }
+] as const;
+export type CriterionId = typeof CRITERIA[number]["id"];
+export type Ratings = Record<CriterionId, number>;
+export const RATING_LABELS: Record<number,string> = {1:"Muito ruim",2:"Ruim",3:"Regular",4:"Bom",5:"Excelente"};
+export function isValidRatings(value: unknown): value is Ratings {
+  if (!value || typeof value !== "object") return false;
+  return CRITERIA.every(({id}) => {
+    const n=(value as Record<string,unknown>)[id];
+    return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 5;
+  });
+}
+export function weightedScore(ratings: Ratings): number {
+  if (!isValidRatings(ratings)) throw new Error("As quatro notas devem ser inteiros entre 1 e 5.");
+  return CRITERIA.reduce((sum,c)=>sum+ratings[c.id]*c.weight,0);
+}

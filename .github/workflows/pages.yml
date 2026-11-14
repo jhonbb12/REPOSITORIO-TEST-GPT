@@ -1,0 +1,53 @@
+name: Build and deploy to GitHub Pages
+on:
+  push:
+    branches: [main, feat/universo-if-avalia-mvp]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publicar no GitHub Pages (exige autorização explícita)"
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # URL pública do Web App (não é segredo); configurar em Settings > Secrets and variables > Actions > Variables.
+      VITE_APPS_SCRIPT_URL: ${{ vars.VITE_APPS_SCRIPT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Report dependency advisories
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node -e "const a=require('/tmp/npm-audit.json'); for (const [name,v] of Object.entries(a.vulnerabilities || {})) console.log(name + ' | ' + v.severity + ' | fix=' + JSON.stringify(v.fixAvailable))"
+      - run: npm audit --audit-level=high
+      - run: npm test
+      - run: npm run audit:catalog
+      - run: npm run export:catalog-csv
+      - run: test "$(wc -l < exports/universo_if_catalogo_46_projetos_v1.0.csv)" -eq 47
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true && github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
