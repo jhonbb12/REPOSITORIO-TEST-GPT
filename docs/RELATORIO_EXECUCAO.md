@@ -10,7 +10,7 @@ Atualização: 14/11/2026. Escopo desta revisão: branch da equipe, backend Apps
 - PR permanece aberta e Draft; sem merge.
 - main permanece intacta.
 - Repositório de referência do professor não foi modificado.
-- Último commit desta revisão: 519884acda32fecda60d39da72018c3cbdb2c863 (verificar SHA atual da branch antes de novo release).
+- Último commit de código verificado pelo CI: 519884acda32fecda60d39da72018c3cbdb2c863. Os commits seguintes desta revisão atualizaram somente documentação; a execução CI correspondente deve ser conferida no histórico do workflow.
 
 ## Entregas implementadas
 
