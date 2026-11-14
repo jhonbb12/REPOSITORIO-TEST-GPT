@@ -83,10 +83,9 @@ export default function App() {
     event.preventDefault();
     setNotice("");
     if (!selected) return setNotice("Selecione um projeto válido antes de avaliar.");
-    if (!code.trim()) return setNotice("Informe o código fornecido pela organização.");
-    setNotice(API_URL
-      ? "Envio desabilitado nesta versão até a homologação do fluxo CORS, recibo e readback no Google Sheets. Nenhum voto foi enviado."
-      : "Avaliação ainda não conectada ao Apps Script. Nenhum voto foi enviado.");
+    if (!API_URL) return setNotice("A tela segura do Apps Script ainda não foi configurada. Nenhum voto foi enviado.");
+    // O código e as notas nunca são colocados na URL. A tela HTML Service os recebe diretamente.
+    window.location.href = API_URL + "?projectId=" + encodeURIComponent(selected.id);
   }
 
   return <div className="app-shell">
@@ -132,7 +131,8 @@ export default function App() {
       </>}
       {tab==="evaluate" && <section>
         <p className="eyebrow">PARTICIPAÇÃO</p><h2>Avaliar um projeto</h2>
-        <p className="muted">Cada código permite avaliar vários projetos, mas somente uma vez cada projeto. O servidor deverá validar novamente as quatro notas.</p>
+        <p className="muted">Cada código permite avaliar vários projetos, mas somente uma vez cada projeto. A avaliação é concluída na tela segura do Google Apps Script, que se comunica diretamente com o servidor por google.script.run.</p>
+        {API_URL ? <p><a className="primary small" href={API_URL + (selectedId ? "?projectId=" + encodeURIComponent(selectedId) : "")}>Abrir avaliação segura</a></p> : <p className="form-notice" role="status">Tela segura ainda não configurada. Nenhum voto pode ser enviado nesta versão.</p>}
         <form className="evaluation-form" onSubmit={submitVote}>
           <label>Projeto<select value={selectedId} onChange={e=>setSelectedId(e.target.value)} required><option value="">Selecione um projeto</option>{catalog.map(p=><option key={p.id} value={p.id}>{p.id} — {p.titulo}</option>)}</select></label>
           <label>Código de participação<input type="password" autoComplete="off" value={code} onChange={e=>setCode(e.target.value)} placeholder="Código fornecido pela organização" required/></label>
@@ -145,6 +145,7 @@ export default function App() {
       {tab==="ranking" && <section>
         <p className="eyebrow">RESULTADOS AGREGADOS</p><h2>Ranking de projetos</h2>
         <p className="muted">A classificação é separada por modalidade e exige pelo menos cinco avaliações válidas. Empates são resolvidos pela média descendente e, persistindo, pelo ID em ordem crescente.</p>
+        {API_URL && <p><a href={API_URL} target="_blank" rel="noreferrer">Abrir ranking atualizado na tela segura</a></p>}
         <label className="ranking-filter">Modalidade<select value={rankingModality} onChange={e=>setRankingModality(e.target.value as "NAC"|"EXT")}><option value="NAC">Mostra Nacional</option><option value="EXT">Mostra de Extensão</option></select></label>
         {rankingState==="loading" && <div className="empty-state" role="status"><h3>Consultando resultados…</h3></div>}
         {rankingState==="error" && <div className="empty-state"><h3>Ranking ainda não disponível</h3><p>O endpoint agregado do Apps Script ainda não foi conectado e homologado.</p></div>}
